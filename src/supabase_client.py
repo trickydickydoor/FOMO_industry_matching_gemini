@@ -36,6 +36,10 @@ class SupabaseClient:
             end_time = datetime.now(timezone.utc)
             start_time = end_time - timedelta(hours=HOURS_LOOKBACK)
             
+            # 添加调试日志
+            logger.info(f"Querying news from {start_time.isoformat()} to {end_time.isoformat()}")
+            logger.info(f"Looking back {HOURS_LOOKBACK} hours")
+            
             # 构建查询
             query = self.client.table("news_items").select("*")
             
@@ -58,6 +62,18 @@ class SupabaseClient:
             
             news_items = response.data
             logger.info(f"Found {len(news_items)} unprocessed news items")
+            
+            # 如果没有找到数据，尝试查看所有数据
+            if len(news_items) == 0:
+                logger.info("No items found, checking total count in database...")
+                total_query = self.client.table("news_items").select("count", count="exact")
+                total_response = total_query.execute()
+                logger.info(f"Total items in database: {total_response.count}")
+                
+                # 查看最近的几条数据
+                recent_query = self.client.table("news_items").select("published_at,industries").order("published_at", desc=True).limit(5)
+                recent_response = recent_query.execute()
+                logger.info(f"Recent items: {recent_response.data}")
             
             return news_items
             
