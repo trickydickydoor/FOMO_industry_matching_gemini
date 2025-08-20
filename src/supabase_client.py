@@ -47,8 +47,8 @@ class SupabaseClient:
             query = query.gte("published_at", start_time.isoformat())
             query = query.lte("published_at", end_time.isoformat())
             
-            # 过滤未处理的新闻（industries为空或为空数组）
-            query = query.is_("industries", "null")
+            # 过滤未分类的新闻
+            query = query.eq("industry_classified", False)
             
             # 按发布时间降序排序
             query = query.order("published_at", desc=True)
@@ -93,9 +93,10 @@ class SupabaseClient:
             是否更新成功
         """
         try:
-            # 更新industries字段
+            # 更新industries字段和分类状态
             response = self.client.table("news_items").update({
-                "industries": industries
+                "industries": industries,
+                "industry_classified": True
             }).eq("id", news_id).execute()
             
             if response.data:
